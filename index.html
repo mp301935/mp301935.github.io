@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>mp301935 TD1_R506</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&family=Major+Mono+Display&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg1: #0f172a; /* navy */
+      --bg2: #06121b; /* deep teal */
+      --accent-a: #7c3aed; /* purple */
+      --accent-b: #06b6d4; /* cyan */
+      --glass: rgba(255,255,255,0.06);
+      --text: #e6eef8;
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+      background: radial-gradient(1200px 600px at 10% 20%, rgba(124,58,237,0.12), transparent 10%),
+                  radial-gradient(1000px 500px at 90% 80%, rgba(6,182,212,0.08), transparent 8%),
+                  linear-gradient(160deg, var(--bg1), var(--bg2));
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+      display:flex;align-items:center;justify-content:center;padding:3rem;
+    }
+
+    .card{
+      width:min(920px, 96%);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border:1px solid rgba(255,255,255,0.04);
+      border-radius:18px;
+      padding:3.25rem 3rem;
+      box-shadow: 0 10px 30px rgba(2,6,23,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
+      backdrop-filter: blur(6px) saturate(110%);
+      position:relative;
+      overflow:hidden;
+    }
+
+    /* subtle animated light streak */
+    .card::before{
+      content:"";
+      position:absolute;inset:-40% -20% auto -20%;
+      height:300px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+      transform:rotate(-12deg);
+      filter:blur(18px) saturate(120%);
+      animation: slide 10s linear infinite;
+      pointer-events:none;
+    }
+    @keyframes slide{
+      0%{transform:translateX(-40%) rotate(-12deg)}
+      50%{transform:translateX(40%) rotate(-12deg)}
+      100%{transform:translateX(-40%) rotate(-12deg)}
+    }
+
+    .title-wrap{
+      display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap;
+    }
+
+    h1{
+      font-family: 'Major Mono Display', monospace;
+      font-weight:700;
+      letter-spacing:0.06em;
+      font-size: clamp(2rem, 5.2vw, 4rem);
+      line-height:1;
+      margin:0;
+      background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+      -webkit-background-clip:text;background-clip:text;color:transparent;
+      text-shadow: 0 6px 18px rgba(10,10,20,0.5);
+      display:inline-block;
+      transform-origin:left center;
+      animation: floatIn 900ms cubic-bezier(.2,.9,.26,1) both;
+    }
+    @keyframes floatIn{
+      from{opacity:0; transform:translateY(18px) scale(0.98)}
+      to{opacity:1; transform:none}
+    }
+
+    .badge{
+      font-size:0.85rem;padding:0.45rem 0.75rem;border-radius:10px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      border:1px solid rgba(255,255,255,0.04);
+      color:var(--text);box-shadow:0 6px 18px rgba(6,11,24,0.45);
+    }
+
+    p.lead{
+      margin-top:1.25rem;color:rgba(230,238,248,0.85);font-size:1.05rem;max-width:70ch;
+    }
+
+    .meta{
+      margin-top:1.5rem;display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center;
+    }
+    .pill{background:var(--glass);padding:.45rem .7rem;border-radius:999px;font-size:.9rem;border:1px solid rgba(255,255,255,0.03)}
+
+    footer{position:absolute;right:18px;bottom:18px;font-size:.75rem;color:rgba(230,238,248,0.45)}
+
+    /* responsive */
+    @media (max-width:560px){
+      .card{padding:2rem}
+      .badge{font-size:.8rem}
+      p.lead{font-size:0.98rem}
+    }
+  </style>
+</head>
+<body>
+  <main class="card" role="main">
+    <div class="title-wrap">
+      <h1>mp301935 TD1_R506</h1>
+      <span class="badge">TD — R506</span>
+    </div>
+
+    <p class="lead">Un titre élégant et moderne pour ton TD — utilise ce fichier comme point de départ. Tu peux changer la palette, la police, ou ajouter un logo si tu veux.</p>
+
+    <div class="meta">
+      <span class="pill">Montrer / Présentation</span>
+      <span class="pill">Responsive</span>
+      <span class="pill">CSS seul</span>
+    </div>
