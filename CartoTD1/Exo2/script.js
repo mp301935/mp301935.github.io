@@ -9,7 +9,7 @@ let currentPosition = null;
 const nicePos = [43.7102, 7.2620]; // Nice centre-ville
 const marseillePos = [43.2965, 5.3698]; // Marseille
 const bermudaTriangle = [
-  [25.0000, -71.0000], // Bermudes
+  [32.321, -64.757], // Bermudes
   [18.5000, -66.5000], // Puerto Rico
   [25.5000, -80.5000]  // Miami
 ];
@@ -71,67 +71,6 @@ function getCurrentPos() {
 	  maximumAge: 60000
 	}
   );
-}
-
-// watchPosition
-function startWatching() {
-  const status = document.getElementById('watch-status');
-  const watchBtn = document.getElementById('watch-btn');
-  const stopBtn = document.getElementById('stop-btn');
-  
-  status.style.display = 'block';
-  status.className = 'status';
-  status.textContent = 'Surveillance en cours...';
-  
-  watchBtn.disabled = true;
-  stopBtn.disabled = false;
-
-  watchId = navigator.geolocation.watchPosition(
-	(position) => {
-	  displayPosition(position, 'watch');
-	  status.className = 'status success';
-	  status.textContent = 'Position mise à jour';
-	  
-	  // Mettre à jour le marqueur
-	  const lat = position.coords.latitude;
-	  const lon = position.coords.longitude;
-	  
-	  if (userMarker) {
-		userMarker.setLatLng([lat, lon]);
-	  } else {
-		userMarker = L.marker([lat, lon]).addTo(map);
-	  }
-	  
-	  addPrecisionCircle(lat, lon, position.coords.accuracy);
-	  currentPosition = position;
-	},
-	(error) => {
-	  status.className = 'status error';
-	  status.textContent = `Erreur: ${getErrorMessage(error)}`;
-	},
-	{
-	  enableHighAccuracy: true,
-	  timeout: 10000,
-	  maximumAge: 30000
-	}
-  );
-}
-
-function stopWatching() {
-  if (watchId) {
-	navigator.geolocation.clearWatch(watchId);
-	watchId = null;
-  }
-  
-  const status = document.getElementById('watch-status');
-  const watchBtn = document.getElementById('watch-btn');
-  const stopBtn = document.getElementById('stop-btn');
-  
-  status.className = 'status';
-  status.textContent = 'Surveillance arrêtée';
-  
-  watchBtn.disabled = false;
-  stopBtn.disabled = true;
 }
 
 // Affichage des données de position
