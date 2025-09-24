@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>mp301935 TD1_R506 - Géolocalisation</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&family=Major+Mono+Display&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>TD1 R506 - Géolocalisation & Leaflet</h1>
+      <p style="color:rgba(230,238,248,0.8);margin-top:0.5rem;">Exercices de géolocalisation avec HTML5 et cartographie interactive</p>
+    </div>
+	
+	<div class="grid">
+      <div class="card">
+        <h2>🌍 getCurrentPosition()</h2>
+        <div class="controls">
+          <button class="btn" onclick="getCurrentPos()">Obtenir Position</button>
+        </div>
+        <div id="current-status" class="status" style="display:none;"></div>
+        <div class="info-grid" id="current-info">
+          <div class="info-item">
+            <span class="label">Latitude:</span>
+            <span class="value" id="current-lat">--</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Longitude:</span>
+            <span class="value" id="current-lon">--</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Altitude:</span>
+            <span class="value" id="current-alt">--</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Précision:</span>
+            <span class="value" id="current-acc">--</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Vitesse:</span>
+            <span class="value" id="current-speed">--</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Date:</span>
+            <span class="value" id="current-date">--</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card map-container">
+        <div id="map" style="height:100%;width:100%;"></div>
+      </div>
+
+      <div class="card" style="grid-column:1/-1;">
+        <h2>🗺️ Contrôles de la Carte</h2>
+        <div class="controls">
+          <button class="btn" onclick="addNiceMarker()">Marqueur Nice</button>
+          <button class="btn" onclick="drawBermudaTriangle()">Triangle des Bermudes</button>
+          <button class="btn" onclick="changeMapTiles()">Changer Tiles</button>
+          <button class="btn" onclick="showDistanceToMarseille()">Distance Marseille</button>
+          <button class="btn" onclick="loadGeoJSON()">Données GeoJSON</button>
+          <button class="btn" onclick="showRoute()">Afficher Itinéraire</button>
+        </div>
+        <div id="map-status" class="status" style="display:none;"></div>
+        <div id="distance-info" style="margin-top:1rem;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
