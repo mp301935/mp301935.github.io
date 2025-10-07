@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Géolocalisation et Globe 3D</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style_TD3.css">
+</head>
+<body>
+    <div id="container">
+        <div id="map"></div>
+        <div id="canvas-container">
+            <div id="info">
+                <div>🖱️ Glissez la souris pour tourner le globe</div>
+                <div>🗺️ Cliquez sur la carte ou sur un pays</div>
+                <div id="position">Position: En attente...</div>
+                <div id="selected">Pays sélectionné: Aucun</div>
+            </div>
+            <div id="loading">Chargement...</div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+	<script src="script_TD3.js"></script>
+</body>
+</html>
