@@ -18,6 +18,7 @@
     .explosion{position:absolute;width:0;height:0;border-radius:50%;pointer-events:none;z-index:1000;transform:translate(-50%,-50%);animation:boom 420ms ease-out forwards;}
     @keyframes boom{0%{width:6px;height:6px;background:rgba(255,240,120,1);opacity:1;box-shadow:0 0 10px rgba(255,180,30,0.9)}60%{width:28px;height:28px;background:rgba(255,120,40,1);opacity:1}100%{width:60px;height:60px;background:rgba(100,40,20,0.0);opacity:0}}
     .info{position:absolute;left:12px;top:12px;background:rgba(255,255,255,0.9);padding:8px 12px;border-radius:8px;z-index:900;box-shadow:0 2px 6px rgba(0,0,0,0.2)}
+    .slider-box{margin-top:8px}
     @media (max-width:720px){.controls{display:flex}.info .kbd{display:none}}
   </style>
 </head>
@@ -27,6 +28,14 @@
     <div>Contrôles: Incliner le téléphone (mobile) • Flèches du clavier (PC)</div>
     <div class="kbd">Tirer: clic/tap</div>
     <div id="status" style="margin-top:6px;font-size:13px;color:#333">Initialisation…</div>
+    <div class="slider-box">
+      <label>Vitesse clavier: <span id="keyboardSpeedVal">0.002</span></label><br>
+      <input type="range" id="keyboardSpeed" min="0.001" max="0.01" step="0.001" value="0.002">
+    </div>
+    <div class="slider-box">
+      <label>Vitesse max gyroscope: <span id="tiltSpeedVal">0.0002</span></label><br>
+      <input type="range" id="tiltSpeed" min="0.00005" max="0.001" step="0.00005" value="0.0002">
+    </div>
   </div>
   <div class="controls" id="controls" style="display:none">
     <div class="btn" id="up">▲</div>
@@ -41,10 +50,23 @@
   <script>
     const map = L.map('map', { zoomControl: true, preferCanvas: true, dragging:false, doubleClickZoom:false, scrollWheelZoom:false, boxZoom:false, keyboard:false, tap:false }).setView([0,0], 2);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+
     const tankHtml = `<div class="tank-marker" id="tankMarker"><div class="tank-body"><div class="tank-turret"></div><div class="tank-barrel" id="barrel"></div></div></div>`;
     const TankIcon = L.divIcon({ html: tankHtml, className: '', iconSize: [64,64], iconAnchor: [32,32] });
+
     let tankLatLng=null,tankMarker=null,tankHeading=0;
-    const moveSpeedKeyboard=0.0006,moveSpeedTilt=0.0009;
+
+    let moveSpeedKeyboard=parseFloat(document.getElementById('keyboardSpeed').value);
+    let moveSpeedTilt=parseFloat(document.getElementById('tiltSpeed').value);
+
+    document.getElementById('keyboardSpeed').addEventListener('input',e=>{
+      moveSpeedKeyboard=parseFloat(e.target.value);
+      document.getElementById('keyboardSpeedVal').textContent=moveSpeedKeyboard.toFixed(3);
+    });
+    document.getElementById('tiltSpeed').addEventListener('input',e=>{
+      moveSpeedTilt=parseFloat(e.target.value);
+      document.getElementById('tiltSpeedVal').textContent=moveSpeedTilt.toFixed(5);
+    });
 
     function spawnExplosion(p){const e=document.createElement('div');e.className='explosion';e.style.left=p.x+'px';e.style.top=p.y+'px';document.body.appendChild(e);setTimeout(()=>e.remove(),700);}
 
@@ -61,14 +83,21 @@
     const keyState={ArrowUp:false,ArrowDown:false,ArrowLeft:false,ArrowRight:false};
     window.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){keyState[e.key]=true;e.preventDefault();}});
     window.addEventListener('keyup',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){keyState[e.key]=false;e.preventDefault();}});
-    function keyboardTick(){if(!tankLatLng)return;let dx=0,dy=0;const f=moveSpeedKeyboard*Math.pow(2,16-map.getZoom());if(keyState.ArrowUp)dx+=-0.0009*f;if(keyState.ArrowDown)dx+=0.0009*f;if(keyState.ArrowLeft)dy+=-0.0009*f;if(keyState.ArrowRight)dy+=0.0009*f;if(dx||dy){const dLat=dx;const dLng=dy/Math.max(Math.cos(tankLatLng.lat*Math.PI/180),0.01);moveTankByDelta(dLat,dLng);tankHeading=Math.atan2(dLng,-dLat)*180/Math.PI;updateTankElement();}}
+
+    function keyboardTick(){if(!tankLatLng)return;let dLat=0,dLng=0;const f=moveSpeedKeyboard*Math.pow(2,16-map.getZoom());
+      if(keyState.ArrowUp) dLat -= f; // Haut = nord
+      if(keyState.ArrowDown) dLat += f; // Bas = sud
+      if(keyState.ArrowLeft) dLng -= f; // Gauche = ouest
+      if(keyState.ArrowRight) dLng += f; // Droite = est
+      if(dLat||dLng){moveTankByDelta(dLat,dLng);tankHeading=Math.atan2(dLat,dLng)*180/Math.PI;updateTankElement();}}
     setInterval(keyboardTick,40);
 
     ['up','down','left','right'].forEach(id=>{const el=document.getElementById(id);el.addEventListener('touchstart',e=>{e.preventDefault();keyState['Arrow'+id[0].toUpperCase()+id.slice(1)]=true;});el.addEventListener('touchend',e=>{e.preventDefault();keyState['Arrow'+id[0].toUpperCase()+id.slice(1)]=false;});el.addEventListener('mousedown',()=>{keyState['Arrow'+id[0].toUpperCase()+id.slice(1)]=true;});el.addEventListener('mouseup',()=>{keyState['Arrow'+id[0].toUpperCase()+id.slice(1)]=false;});});
 
-    let useTilt=false;let tiltState={beta:0,gamma:0};
-    function handleOrientation(e){tiltState.beta=e.beta||0;tiltState.gamma=e.gamma||0;if(!tankLatLng)return;const f=Math.max(-30,Math.min(30,tiltState.beta));const r=Math.max(-30,Math.min(30,tiltState.gamma));const th=6;if(Math.abs(f)>th||Math.abs(r)>th){const s=moveSpeedTilt*(Math.abs(f)+Math.abs(r))/30*Math.pow(2,16-map.getZoom());const dLat=f/30*s*0.9*0.0001*10000;const dLng=r/30*s*0.0001*10000;const dLngAdj=dLng/Math.max(Math.cos(tankLatLng.lat*Math.PI/180),0.01);moveTankByDelta(dLat,dLngAdj);tankHeading=Math.atan2(dLngAdj,-dLat)*180/Math.PI;updateTankElement();}}
-    async function enableDeviceOrientation(){if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){try{const r=await DeviceOrientationEvent.requestPermission();if(r==='granted'){window.addEventListener('deviceorientation',handleOrientation);useTilt=true;document.getElementById('status').textContent='Contrôle par inclinaison activé.';document.getElementById('controls').style.display='none';}else{document.getElementById('status').textContent='Permission inclinaison refusée — utilisez les flèches.';document.getElementById('controls').style.display='';}}catch(e){document.getElementById('status').textContent='Impossible de demander la permission d\'inclinaison.';document.getElementById('controls').style.display='';}}else if('ondeviceorientation' in window){window.addEventListener('deviceorientation',handleOrientation);useTilt=true;document.getElementById('status').textContent='Contrôle par inclinaison activé.';document.getElementById('controls').style.display='none';}else{document.getElementById('status').textContent='Inclinaison non supportée — utilisez les flèches.';document.getElementById('controls').style.display='';}}
+    let tiltState={beta:0,gamma:0};
+    function handleOrientation(e){tiltState.beta=e.beta||0;tiltState.gamma=e.gamma||0;if(!tankLatLng)return;const beta=Math.max(-30,Math.min(30,tiltState.beta));const gamma=Math.max(-30,Math.min(30,tiltState.gamma));const th=6;if(Math.abs(beta)>th||Math.abs(gamma)>th){const scale=moveSpeedTilt*Math.pow(2,16-map.getZoom());const dLat=(-beta/30)*scale;const dLng=(gamma/30)*scale;moveTankByDelta(dLat,dLng);tankHeading=Math.atan2(dLat,dLng)*180/Math.PI;updateTankElement();}}
+
+    async function enableDeviceOrientation(){if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){try{const r=await DeviceOrientationEvent.requestPermission();if(r==='granted'){window.addEventListener('deviceorientation',handleOrientation);document.getElementById('status').textContent='Contrôle par inclinaison activé.';document.getElementById('controls').style.display='none';}else{document.getElementById('status').textContent='Permission inclinaison refusée — utilisez les flèches.';document.getElementById('controls').style.display='';}}catch(e){document.getElementById('status').textContent='Impossible de demander la permission d\'inclinaison.';document.getElementById('controls').style.display='';}}else if('ondeviceorientation' in window){window.addEventListener('deviceorientation',handleOrientation);document.getElementById('status').textContent='Contrôle par inclinaison activé.';document.getElementById('controls').style.display='none';}else{document.getElementById('status').textContent='Inclinaison non supportée — utilisez les flèches.';document.getElementById('controls').style.display='';}}
 
     function onGeoSuccess(p){const {latitude,longitude}=p.coords;tankLatLng=L.latLng(latitude,longitude);if(!tankMarker){tankMarker=L.marker(tankLatLng,{icon:TankIcon,interactive:false}).addTo(map);}else tankMarker.setLatLng(tankLatLng);map.setView(tankLatLng,15);document.getElementById('status').textContent='Position initiale verrouillée.';updateTankElement();}
     function onGeoError(){tankLatLng=map.getCenter();if(!tankMarker)tankMarker=L.marker(tankLatLng,{icon:TankIcon,interactive:false}).addTo(map);map.setView(tankLatLng,3);document.getElementById('status').textContent='Géolocalisation indisponible — position par défaut.';}
@@ -77,7 +106,6 @@
     const info=document.getElementById('info');const orientBtn=document.createElement('button');orientBtn.textContent='Activer contrôle par inclinaison';orientBtn.style.marginTop='6px';orientBtn.style.padding='6px 8px';orientBtn.style.borderRadius='6px';orientBtn.style.border='none';orientBtn.style.cursor='pointer';orientBtn.addEventListener('click',()=>{enableDeviceOrientation();orientBtn.remove();});info.appendChild(orientBtn);
 
     if(('ontouchstart' in window)||navigator.maxTouchPoints>0){document.getElementById('controls').style.display='';}
-
     map.on('layeradd',()=>{setTimeout(updateTankElement,50);});
     document.getElementById('status').textContent='Prêt — cliquez "Activer contrôle par inclinaison" si vous voulez utiliser le gyroscope.';
   </script>
