@@ -28,14 +28,10 @@
     <div>Contrôles: Incliner le téléphone (mobile) • Flèches du clavier (PC)</div>
     <div class="kbd">Tirer: clic/tap</div>
     <div id="status" style="margin-top:6px;font-size:13px;color:#333">Initialisation…</div>
-    <div class="slider-box">
-      <label>Vitesse clavier: <span id="keyboardSpeedVal">0.002</span></label><br>
-      <input type="range" id="keyboardSpeed" min="0.001" max="0.01" step="0.001" value="0.002">
-    </div>
-    <div class="slider-box">
-      <label>Vitesse max gyroscope: <span id="tiltSpeedVal">0.0002</span></label><br>
-      <input type="range" id="tiltSpeed" min="0.00005" max="0.001" step="0.00005" value="0.0002">
-    </div>
+	<div class="speed-slider">
+		<label>Vitesse</label>
+		<input type="range" id="speedControl" min="0.5" max="5" step="0.1" value="2">
+	</div>
   </div>
   <div class="controls" id="controls" style="display:none">
     <div class="btn" id="up">▲</div>
@@ -48,6 +44,9 @@
   <div class="fire-btn" id="fire">BOOM</div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
+	
+	let speed = 0.00005 * parseFloat(document.getElementById('speedControl').value);
+  
     const map = L.map('map', { zoomControl: true, preferCanvas: true, dragging:false, doubleClickZoom:false, scrollWheelZoom:false, boxZoom:false, keyboard:false, tap:false }).setView([0,0], 2);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
 
@@ -56,17 +55,11 @@
 
     let tankLatLng=null,tankMarker=null,tankHeading=0;
 
-    let moveSpeedKeyboard=parseFloat(document.getElementById('keyboardSpeed').value);
-    let moveSpeedTilt=parseFloat(document.getElementById('tiltSpeed').value);
-
-    document.getElementById('keyboardSpeed').addEventListener('input',e=>{
-      moveSpeedKeyboard=parseFloat(e.target.value);
-      document.getElementById('keyboardSpeedVal').textContent=moveSpeedKeyboard.toFixed(3);
-    });
-    document.getElementById('tiltSpeed').addEventListener('input',e=>{
-      moveSpeedTilt=parseFloat(e.target.value);
-      document.getElementById('tiltSpeedVal').textContent=moveSpeedTilt.toFixed(5);
-    });
+	document.getElementById('speedControl').addEventListener('input', (e) => {
+		const val = parseFloat(e.target.value);
+		speed = 0.00005 * val;
+		maxTiltSpeed = 0.00005 * val;
+	});
 
     function spawnExplosion(p){const e=document.createElement('div');e.className='explosion';e.style.left=p.x+'px';e.style.top=p.y+'px';document.body.appendChild(e);setTimeout(()=>e.remove(),700);}
 
@@ -84,9 +77,9 @@
     window.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){keyState[e.key]=true;e.preventDefault();}});
     window.addEventListener('keyup',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){keyState[e.key]=false;e.preventDefault();}});
 
-    function keyboardTick(){if(!tankLatLng)return;let dLat=0,dLng=0;const f=moveSpeedKeyboard*Math.pow(2,16-map.getZoom());
-      if(keyState.ArrowUp) dLat -= f; // Haut = nord
-      if(keyState.ArrowDown) dLat += f; // Bas = sud
+    function keyboardTick(){if(!tankLatLng)return;let dLat=0,dLng=0;const f=speed*Math.pow(2,16-map.getZoom());
+      if(keyState.ArrowUp) dLat += f; // Haut = nord
+      if(keyState.ArrowDown) dLat -= f; // Bas = sud
       if(keyState.ArrowLeft) dLng -= f; // Gauche = ouest
       if(keyState.ArrowRight) dLng += f; // Droite = est
       if(dLat||dLng){moveTankByDelta(dLat,dLng);tankHeading=Math.atan2(dLat,dLng)*180/Math.PI;updateTankElement();}}
@@ -95,7 +88,7 @@
     ['up','down','left','right'].forEach(id=>{const el=document.getElementById(id);el.addEventListener('touchstart',e=>{e.preventDefault();keyState['Arrow'+id[0].toUpperCase()+id.slice(1)]=true;});el.addEventListener('touchend',e=>{e.preventDefault();keyState['Arrow'+id[0].toUpperCase()+id.slice(1)]=false;});el.addEventListener('mousedown',()=>{keyState['Arrow'+id[0].toUpperCase()+id.slice(1)]=true;});el.addEventListener('mouseup',()=>{keyState['Arrow'+id[0].toUpperCase()+id.slice(1)]=false;});});
 
     let tiltState={beta:0,gamma:0};
-    function handleOrientation(e){tiltState.beta=e.beta||0;tiltState.gamma=e.gamma||0;if(!tankLatLng)return;const beta=Math.max(-30,Math.min(30,tiltState.beta));const gamma=Math.max(-30,Math.min(30,tiltState.gamma));const th=6;if(Math.abs(beta)>th||Math.abs(gamma)>th){const scale=moveSpeedTilt*Math.pow(2,16-map.getZoom());const dLat=(-beta/30)*scale;const dLng=(gamma/30)*scale;moveTankByDelta(dLat,dLng);tankHeading=Math.atan2(dLat,dLng)*180/Math.PI;updateTankElement();}}
+    function handleOrientation(e){tiltState.beta=e.beta||0;tiltState.gamma=e.gamma||0;if(!tankLatLng)return;const beta=Math.max(-30,Math.min(30,tiltState.beta));const gamma=Math.max(-30,Math.min(30,tiltState.gamma));const th=6;if(Math.abs(beta)>th||Math.abs(gamma)>th){const scale=speed*Math.pow(2,16-map.getZoom());const dLat=(-beta/30)*scale;const dLng=(gamma/30)*scale;moveTankByDelta(dLat,dLng);tankHeading=Math.atan2(dLat,dLng)*180/Math.PI;updateTankElement();}}
 
     async function enableDeviceOrientation(){if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){try{const r=await DeviceOrientationEvent.requestPermission();if(r==='granted'){window.addEventListener('deviceorientation',handleOrientation);document.getElementById('status').textContent='Contrôle par inclinaison activé.';document.getElementById('controls').style.display='none';}else{document.getElementById('status').textContent='Permission inclinaison refusée — utilisez les flèches.';document.getElementById('controls').style.display='';}}catch(e){document.getElementById('status').textContent='Impossible de demander la permission d\'inclinaison.';document.getElementById('controls').style.display='';}}else if('ondeviceorientation' in window){window.addEventListener('deviceorientation',handleOrientation);document.getElementById('status').textContent='Contrôle par inclinaison activé.';document.getElementById('controls').style.display='none';}else{document.getElementById('status').textContent='Inclinaison non supportée — utilisez les flèches.';document.getElementById('controls').style.display='';}}
 
