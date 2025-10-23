@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tank sur la carte — contrôle par orientation</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial}
+    #map{height:100%;width:100%;position:relative}
+    .tank-marker{width:64px;height:64px;transform-origin:center center;pointer-events:none;position:relative}
+    .tank-body{width:64px;height:64px;background:linear-gradient(#6b8e23,#4c6b16);border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.4);position:relative;display:flex;align-items:center;justify-content:center}
+    .tank-turret{position:absolute;width:22px;height:22px;background:#2f4f2f;border-radius:50%;top:21px;left:21px;z-index:3;box-shadow:inset 0 -2px 2px rgba(255,255,255,0.04)}
+    .tank-barrel{position:absolute;width:36px;height:6px;background:#2f4f2f;border-radius:4px;right:-6px;top:29px;transform-origin:left center;z-index:2;box-shadow:inset 0 -1px 1px rgba(255,255,255,0.04)}
+    .controls{position:absolute;left:12px;bottom:12px;display:flex;gap:8px;z-index:900}
+    .btn{width:52px;height:52px;border-radius:10px;background:rgba(255,255,255,0.9);display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,0.25);user-select:none}
+    .fire-btn{position:absolute;right:12px;bottom:12px;width:64px;height:64px;border-radius:999px;background:rgba(255,80,80,0.95);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;z-index:900}
+    .explosion{position:absolute;width:0;height:0;border-radius:50%;pointer-events:none;z-index:1000;transform:translate(-50%,-50%);animation:boom 420ms ease-out forwards;}
+    @keyframes boom{0%{width:6px;height:6px;background:rgba(255,240,120,1);opacity:1;box-shadow:0 0 10px rgba(255,180,30,0.9)}60%{width:28px;height:28px;background:rgba(255,120,40,1);opacity:1}100%{width:60px;height:60px;background:rgba(100,40,20,0.0);opacity:0}}
+    .info{position:absolute;left:12px;top:12px;background:rgba(255,255,255,0.9);padding:8px 12px;border-radius:8px;z-index:900;box-shadow:0 2px 6px rgba(0,0,0,0.2)}
+    @media (max-width:720px){.controls{display:flex}.info .kbd{display:none}}
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div class="info" id="info">
+    <div>Contrôles: Incliner le téléphone (mobile) • Flèches du clavier (PC)</div>
+    <div class="kbd">Tirer: clic/tap</div>
+    <div id="status" style="margin-top:6px;font-size:13px;color:#333">Initialisation…</div>
+  </div>
+  <div class="controls" id="controls" style="display:none">
+    <div class="btn" id="up">▲</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div class="btn" id="left">◄</div>
+      <div class="btn" id="right">►</div>
+    </div>
+    <div class="btn" id="down">▼</div>
+  </div>
+  <div class="fire-btn" id="fire">BOOM</div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map', { zoomControl: true, preferCanvas: true, dragging:false, doubleClickZoom:false, scrollWheelZoom:false, boxZoom:false, keyboard:false, tap:false }).setView([0,0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+    const tankHtml = `<div class="tank-marker" id="tankMarker"><div class="tank-body"><div class="tank-turret"></div><div class="tank-barrel" id="barrel"></div></div></div>`;
+    const TankIcon = L.divIcon({ html: tankHtml, className: '', iconSize: [64,64], iconAnchor: [32,32] });
+    let tankLatLng=null,tankMarker=null,tankHeading=0;
+    const moveSpeedKeyboard=0.0006,moveSpeedTilt=0.0009;
+
+    function spawnExplosion(p){const e=document.createElement('div');e.className='explosion';e.style.left=p.x+'px';e.style.top=p.y+'px';document.body.appendChild(e);setTimeout(()=>e.remove(),700);}
+
+    function getBarrelTipScreenPoint(){if(!tankMarker)return null;const pt=map.latLngToContainerPoint(tankLatLng);const offset=28;const a=tankHeading*Math.PI/180;return{x:pt.x+Math.cos(a)*offset+map.getContainer().getBoundingClientRect().left,y:pt.y+Math.sin(a)*offset+map.getContainer().getBoundingClientRect().top};}
+
+    function fireWeapon(){if(!tankMarker)return;const p=getBarrelTipScreenPoint();if(p)spawnExplosion(p);} 
+    document.getElementById('fire').addEventListener('click',fireWeapon);
+    map.on('click',()=>fireWeapon());
+
+    function ensureTank(){if(!tankMarker){tankLatLng=map.getCenter();tankMarker=L.marker(tankLatLng,{icon:TankIcon,interactive:false}).addTo(map);updateTankElement();}}
+    function updateTankElement(){if(!tankMarker)return;tankMarker.setLatLng(tankLatLng);const el=document.getElementById('tankMarker');if(el){el.style.transform=`rotate(${tankHeading}deg)`;}map.setView(tankLatLng,map.getZoom(),{animate:false});}
+    function moveTankByDelta(dLat,dLng){if(!tankLatLng)ensureTank();tankLatLng=L.latLng(tankLatLng.lat+dLat,tankLatLng.lng+dLng);updateTankElement();}
+
+    const keyState={ArrowUp:false,ArrowDown:false,ArrowLeft:false,ArrowRight:false};
+    window.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){keyState[e.key]=true;e.preventDefault();}});
+    window.addEventListener('keyup',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){keyState[e.key]=false;e.preventDefault();}});
+    function keyboardTick(){if(!tankLatLng)return;let dx=0,dy=0;const f=moveSpeedKeyboard*Math.pow(2,16-map.getZoom());if(keyState.ArrowUp)dx+=-0.0009*f;if(keyState.ArrowDown)dx+=0.0009*f;if(keyState.ArrowLeft)dy+=-0.0009*f;if(keyState.ArrowRight)dy+=0.0009*f;if(dx||dy){const dLat=dx;const dLng=dy/Math.max(Math.cos(tankLatLng.lat*Math.PI/180),0.01);moveTankByDelta(dLat,dLng);tankHeading=Math.atan2(dLng,-dLat)*180/Math.PI;updateTankElement();}}
+    setInterval(keyboardTick,40);
+
+    ['up','down','left','right'].forEach(id=>{const el=document.getElementById(id);el.addEventListener('touchstart',e=>{e.preventDefault();keyState['Arrow'+id[0].toUpperCase()+id.slice(1)]=true;});el.addEventListener('touchend',e=>{e.preventDefault();keyState['Arrow'+id[0].toUpperCase()+id.slice(1)]=false;});el.addEventListener('mousedown',()=>{keyState['Arrow'+id[0].toUpperCase()+id.slice(1)]=true;});el.addEventListener('mouseup',()=>{keyState['Arrow'+id[0].toUpperCase()+id.slice(1)]=false;});});
+
+    let useTilt=false;let tiltState={beta:0,gamma:0};
+    function handleOrientation(e){tiltState.beta=e.beta||0;tiltState.gamma=e.gamma||0;if(!tankLatLng)return;const f=Math.max(-30,Math.min(30,tiltState.beta));const r=Math.max(-30,Math.min(30,tiltState.gamma));const th=6;if(Math.abs(f)>th||Math.abs(r)>th){const s=moveSpeedTilt*(Math.abs(f)+Math.abs(r))/30*Math.pow(2,16-map.getZoom());const dLat=f/30*s*0.9*0.0001*10000;const dLng=r/30*s*0.0001*10000;const dLngAdj=dLng/Math.max(Math.cos(tankLatLng.lat*Math.PI/180),0.01);moveTankByDelta(dLat,dLngAdj);tankHeading=Math.atan2(dLngAdj,-dLat)*180/Math.PI;updateTankElement();}}
+    async function enableDeviceOrientation(){if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){try{const r=await DeviceOrientationEvent.requestPermission();if(r==='granted'){window.addEventListener('deviceorientation',handleOrientation);useTilt=true;document.getElementById('status').textContent='Contrôle par inclinaison activé.';document.getElementById('controls').style.display='none';}else{document.getElementById('status').textContent='Permission inclinaison refusée — utilisez les flèches.';document.getElementById('controls').style.display='';}}catch(e){document.getElementById('status').textContent='Impossible de demander la permission d\'inclinaison.';document.getElementById('controls').style.display='';}}else if('ondeviceorientation' in window){window.addEventListener('deviceorientation',handleOrientation);useTilt=true;document.getElementById('status').textContent='Contrôle par inclinaison activé.';document.getElementById('controls').style.display='none';}else{document.getElementById('status').textContent='Inclinaison non supportée — utilisez les flèches.';document.getElementById('controls').style.display='';}}
+
+    function onGeoSuccess(p){const {latitude,longitude}=p.coords;tankLatLng=L.latLng(latitude,longitude);if(!tankMarker){tankMarker=L.marker(tankLatLng,{icon:TankIcon,interactive:false}).addTo(map);}else tankMarker.setLatLng(tankLatLng);map.setView(tankLatLng,15);document.getElementById('status').textContent='Position initiale verrouillée.';updateTankElement();}
+    function onGeoError(){tankLatLng=map.getCenter();if(!tankMarker)tankMarker=L.marker(tankLatLng,{icon:TankIcon,interactive:false}).addTo(map);map.setView(tankLatLng,3);document.getElementById('status').textContent='Géolocalisation indisponible — position par défaut.';}
+    if(navigator.geolocation){navigator.geolocation.getCurrentPosition(onGeoSuccess,onGeoError,{enableHighAccuracy:true,timeout:6000});}else onGeoError();
+
+    const info=document.getElementById('info');const orientBtn=document.createElement('button');orientBtn.textContent='Activer contrôle par inclinaison';orientBtn.style.marginTop='6px';orientBtn.style.padding='6px 8px';orientBtn.style.borderRadius='6px';orientBtn.style.border='none';orientBtn.style.cursor='pointer';orientBtn.addEventListener('click',()=>{enableDeviceOrientation();orientBtn.remove();});info.appendChild(orientBtn);
+
+    if(('ontouchstart' in window)||navigator.maxTouchPoints>0){document.getElementById('controls').style.display='';}
+
+    map.on('layeradd',()=>{setTimeout(updateTankElement,50);});
+    document.getElementById('status').textContent='Prêt — cliquez "Activer contrôle par inclinaison" si vous voulez utiliser le gyroscope.';
+  </script>
+</body>
+</html>
