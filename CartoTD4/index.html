@@ -78,17 +78,17 @@
     window.addEventListener('keyup',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){keyState[e.key]=false;e.preventDefault();}});
 
     function keyboardTick(){if(!tankLatLng)return;let dLat=0,dLng=0;const f=speed*Math.pow(2,16-map.getZoom());
-      if(keyState.ArrowUp) dLat += f; // Haut = nord
-      if(keyState.ArrowDown) dLat -= f; // Bas = sud
+      if(keyState.ArrowUp) dLat -= f; // Haut = nord
+      if(keyState.ArrowDown) dLat += f; // Bas = sud
       if(keyState.ArrowLeft) dLng -= f; // Gauche = ouest
       if(keyState.ArrowRight) dLng += f; // Droite = est
-      if(dLat||dLng){moveTankByDelta(dLat,dLng);tankHeading=Math.atan2(dLat,dLng)*180/Math.PI;updateTankElement();}}
+      if(dLat||dLng){moveTankByDelta(-dLat,dLng);tankHeading=Math.atan2(dLat,dLng)*180/Math.PI;updateTankElement();}}
     setInterval(keyboardTick,40);
 
     ['up','down','left','right'].forEach(id=>{const el=document.getElementById(id);el.addEventListener('touchstart',e=>{e.preventDefault();keyState['Arrow'+id[0].toUpperCase()+id.slice(1)]=true;});el.addEventListener('touchend',e=>{e.preventDefault();keyState['Arrow'+id[0].toUpperCase()+id.slice(1)]=false;});el.addEventListener('mousedown',()=>{keyState['Arrow'+id[0].toUpperCase()+id.slice(1)]=true;});el.addEventListener('mouseup',()=>{keyState['Arrow'+id[0].toUpperCase()+id.slice(1)]=false;});});
 
     let tiltState={beta:0,gamma:0};
-    function handleOrientation(e){tiltState.beta=e.beta||0;tiltState.gamma=e.gamma||0;if(!tankLatLng)return;const beta=Math.max(-30,Math.min(30,tiltState.beta));const gamma=Math.max(-30,Math.min(30,tiltState.gamma));const th=6;if(Math.abs(beta)>th||Math.abs(gamma)>th){const scale=speed*Math.pow(2,16-map.getZoom());const dLat=(-beta/30)*scale;const dLng=(gamma/30)*scale;moveTankByDelta(dLat,dLng);tankHeading=Math.atan2(dLat,dLng)*180/Math.PI;updateTankElement();}}
+    function handleOrientation(e){tiltState.beta=e.beta||0;tiltState.gamma=e.gamma||0;if(!tankLatLng)return;const beta=Math.max(-30,Math.min(30,tiltState.beta));const gamma=Math.max(-30,Math.min(30,tiltState.gamma));const th=6;if(Math.abs(beta)>th||Math.abs(gamma)>th){const scale=speed*Math.pow(2,16-map.getZoom());const dLat=(-beta/30)*scale;const dLng=(gamma/30)*scale;moveTankByDelta(-dLat,dLng);tankHeading=Math.atan2(dLat,dLng)*180/Math.PI;updateTankElement();}}
 
     async function enableDeviceOrientation(){if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){try{const r=await DeviceOrientationEvent.requestPermission();if(r==='granted'){window.addEventListener('deviceorientation',handleOrientation);document.getElementById('status').textContent='Contrôle par inclinaison activé.';document.getElementById('controls').style.display='none';}else{document.getElementById('status').textContent='Permission inclinaison refusée — utilisez les flèches.';document.getElementById('controls').style.display='';}}catch(e){document.getElementById('status').textContent='Impossible de demander la permission d\'inclinaison.';document.getElementById('controls').style.display='';}}else if('ondeviceorientation' in window){window.addEventListener('deviceorientation',handleOrientation);document.getElementById('status').textContent='Contrôle par inclinaison activé.';document.getElementById('controls').style.display='none';}else{document.getElementById('status').textContent='Inclinaison non supportée — utilisez les flèches.';document.getElementById('controls').style.display='';}}
 
